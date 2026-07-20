@@ -1,0 +1,45 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; color: #1e293b; padding: 2rem; }
+.container { max-width: 700px; margin: 0 auto; }
+header { text-align: center; margin-bottom: 1.5rem; }
+h1 { color: #2563eb; font-size: 1.6rem; margin-bottom: 0.3rem; }
+.loading { color: #94a3b8; font-size: 0.85rem; }
+.status-ok { color: #10b981; font-size: 0.85rem; }
+.status-error { color: #ef4444; font-size: 0.85rem; }
+
+.add-form {
+    display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap;
+}
+.add-form input, .add-form select {
+    flex: 1; min-width: 120px; padding: 0.5rem 0.7rem; border: 1px solid #d1d5db;
+    border-radius: 6px; font-size: 0.9rem; outline: none;
+}
+.add-form input:focus { border-color: #2563eb; }
+.add-form button {
+    background: #2563eb; color: white; border: none; padding: 0.5rem 1rem;
+    border-radius: 6px; cursor: pointer; font-weight: 600;
+}
+.add-form button:hover { background: #1d4ed8; }
+
+.filter { margin-bottom: 1rem; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.filter span { font-size: 0.85rem; color: #64748b; }
+.filter button {
+    background: #e2e8f0; border: none; padding: 0.3rem 0.7rem; border-radius: 4px;
+    cursor: pointer; font-size: 0.8rem;
+}
+.filter button:hover { background: #cbd5e1; }
+
+ul { list-style: none; }
+li {
+    background: white; padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 0.5rem;
+    display: flex; justify-content: space-between; align-items: center;
+    border-left: 4px solid #2563eb; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+li .info { flex: 1; }
+li .title { font-weight: 600; font-size: 0.95rem; }
+li .url { font-size: 0.8rem; color: #2563eb; text-decoration: none; word-break: break-all; }
+li .tag { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-top: 4px; }
+li .del-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1.1rem; padding: 0.3rem; }
+li .del-btn:hover { background: #fee2e2; border-radius: 4px; }
+
+footer { text-align: center; margin-top: 2rem; font-size: 0.8rem; color: #94a3b8; }

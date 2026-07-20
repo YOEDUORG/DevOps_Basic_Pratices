@@ -1,0 +1,65 @@
+# ============================================
+# Docker Compose — Buổi 2: Microservices
+# Kiến trúc 3 tầng: Frontend → Backend → MySQL
+# ============================================
+
+services:
+  # --- Service 1: Database (MySQL) ---
+  mysql_db:
+    image: mysql:8.0
+    container_name: bookmark_db
+    environment:
+      MYSQL_ROOT_PASSWORD: devops123
+      MYSQL_DATABASE: bookmark_db
+    volumes:
+      - mysql_data:/var/lib/mysql                              # Persist data
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql  # Auto init lần đầu
+    restart: unless-stopped
+    networks:
+      - app_network
+
+  # --- Service 2: Backend (Node.js API) ---
+  backend:
+    build: ./backend
+    environment:
+      - DB_HOST=mysql_db           # Kết nối MySQL bằng tên service (DNS nội bộ)
+      - DB_USER=root
+      - DB_PASSWORD=devops123
+      - DB_NAME=bookmark_db
+    depends_on:
+      - mysql_db                   # Khởi động sau MySQL
+    restart: unless-stopped
+    networks:
+      - app_network
+    # KHÔNG expose port ra ngoài — Frontend sẽ proxy request tới
+
+  # --- Service 3: Frontend (Nginx) ---
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend                    # Khởi động sau Backend
+    restart: unless-stopped
+    networks:
+      - app_network
+
+  # --- Service 4: API Gateway (Ocelot .NET) ---
+  ocelotgw:
+    build: ./ocelotgw
+    ports:
+      - "8080:8081"                # Cổng duy nhất expose ra bên ngoài
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - app_network
+
+# --- Volumes ---
+volumes:
+  mysql_data:
+    driver: local
+
+# --- Networks ---
+networks:
+  app_network:
+    driver: bridge

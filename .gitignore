@@ -1,0 +1,28 @@
+# Ignore unused study directories
+03_CICD/
+04_EndToEnd_Interview/
+Draft/
+
+# Ignore specific individual guide files
+01_Docker/QUIZ.md
+01_Docker/README.md
+01_Docker/TIMELINE.md
+
+# Python virtual environment
+.venv/
+
+# Node.js build & log directories
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# .NET build & publish directories (Ocelot Gateway)
+bin/
+obj/
+
+# Docker data volumes
+mysql_data/
+*.log
+
+# MacOS environment
+.DS_Store

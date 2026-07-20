@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookmark Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Bookmark Manager</h1>
+            <p id="status-text" class="loading">Đang kết nối...</p>
+        </header>
+
+        <div class="add-form">
+            <input type="text" id="input-title" placeholder="Tiêu đề">
+            <input type="url" id="input-url" placeholder="URL (https://...)">
+            <select id="input-tag">
+                <option value="general">general</option>
+                <option value="devops">devops</option>
+                <option value="frontend">frontend</option>
+                <option value="backend">backend</option>
+                <option value="tools">tools</option>
+            </select>
+            <button id="add-btn">Thêm</button>
+        </div>
+
+        <div class="filter">
+            <span>Lọc theo tag:</span>
+            <button onclick="loadBookmarks()">Tất cả</button>
+            <button onclick="loadBookmarks('devops')">devops</button>
+            <button onclick="loadBookmarks('frontend')">frontend</button>
+            <button onclick="loadBookmarks('backend')">backend</button>
+            <button onclick="loadBookmarks('tools')">tools</button>
+        </div>
+
+        <ul id="bookmark-list"></ul>
+
+        <footer>DevOps Basic — Lab Buổi 2: Microservices & Docker Compose</footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

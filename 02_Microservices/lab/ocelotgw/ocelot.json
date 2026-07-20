@@ -1,0 +1,58 @@
+{
+  "Routes": [
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        // {
+        //   "Host": "backend",
+        //   "Port": 3001
+        // },
+        {
+          "Host": "127.0.0.1",
+          "Port": 4000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/{everything}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete"
+      ],
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
+      },
+      "ServiceDiscoveryProvider": {
+        "Host": "consul",
+        "Port": 8500
+      }
+      // HƯỚNG DẪN DEMO LOAD BALANCING (Từ Slide 13)
+      // Sửa giá trị "Type" ở trên để đổi thuật toán chia tải.
+      // Các tuỳ chọn (Type) có sẵn:
+      // 1. "RoundRobin" : Tuần tự (Mặc định).
+      // 2. "LeastConnection" : Gửi request tới server rảnh nhất.
+      // 3. "CookieStickySessions" : Cố định server theo session người dùng.
+    },
+    {
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "frontend",
+          "Port": 80
+        }
+      ],
+      "UpstreamPathTemplate": "/{everything}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete"
+      ]
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "http://localhost:8081"
+  }
+}
