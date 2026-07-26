@@ -6,29 +6,51 @@
 
 name: CD Pipeline
 
-# Trigger: Chạy sau khi workflow CI hoàn thành thành công trên nhánh 'cicd'
 on:
-  workflow_run:
-    workflows: ["CI Pipeline"]
-    types:
-      - completed
-    branches:
-      - cicd
+  # ==============================================================================
+  # CÁCH 1: Dùng `workflow_run` 
+  # LƯU Ý: Cách này CHỈ HOẠT ĐỘNG khi file workflow này nằm trên nhánh default (thường là 'main').
+  # Do chúng ta đang thực hành trên nhánh 'cicd', cách này sẽ bị GitHub bỏ qua.
+  # ==============================================================================
+  # workflow_run:
+  #   workflows: ["CI Pipeline For Runner"]
+  #   types:
+  #     - completed
+  #   branches:
+  #     - cicd
+
+  # ==============================================================================
+  # CÁCH 2: Dùng `workflow_call` (Reusable workflow)
+  # HOẠT ĐỘNG TRÊN MỌI NHÁNH. Cho phép CI Pipeline gọi trực tiếp file CD này.
+  # 💡 NOTE: Vì dùng workflow_call, CD Pipeline sẽ KHÔNG hiển thị thành 1 dòng riêng 
+  # ở thanh menu trái của GitHub Actions. Thay vào đó, Job của nó sẽ chạy "gộp" 
+  # và hiển thị chung bên trong bản run của CI Pipeline đã gọi nó.
+  # ==============================================================================
+  workflow_call:
+    inputs:
+      sha:
+        description: 'Commit SHA from CI'
+        required: true
+        type: string
 
 jobs:
   # ===== DEPLOY TO SELF-HOSTED SERVER =====
   deploy-to-vm:
     name: 🚀 Deploy to Ubuntu VM
-    runs-on: self-hosted                        # Chạy trên runner cài trong VM của bạn
-    # Chỉ chạy nếu CI Pipeline THÀNH CÔNG (không chạy nếu CI bị fail)
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
+    runs-on: self-hosted
+    
+    # Nếu dùng CÁCH 1 (workflow_run), bạn cần mở comment dòng if này để đảm bảo CI phải thành công:
+    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
+ 
     steps:
-      # Lấy SHA của commit đã trigger CI để pull đúng image version
       - name: Set image tag from CI run
         id: vars
         run: |
-          echo "SHA=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          # Dùng cho CÁCH 1 (workflow_run): Lấy SHA từ thông tin event của workflow đi trước
+          # echo "SHA=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          
+          # Dùng cho CÁCH 2 (workflow_call): Lấy SHA từ biến đầu vào (inputs) được truyền sang
+          echo "SHA=${{ inputs.sha }}" >> $GITHUB_OUTPUT
 
       # Đăng nhập vào Docker Hub để pull image
       - name: Login to Docker Hub

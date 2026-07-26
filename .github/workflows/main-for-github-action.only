@@ -3,7 +3,7 @@
 # Buổi 3: Tự động Build, Test và Deploy
 # ============================================
 
-name: CI Pipeline
+name: CI Pipeline for GitHub Actions Build / Push Only
 
 # Kích hoạt khi có code push hoặc tạo pull request vào nhánh 'cicd'
 on:
@@ -15,14 +15,13 @@ on:
 jobs:
   # ===== JOB 1: BUILD & TEST =====
   build-and-test:
-    name: 🧪 Build & Test
+    name: 🧪 Build & Test on GitHub Actions
     runs-on: ubuntu-latest
 
     steps:
       # Bước 1: Tải mã nguồn về runner 
       - name: Checkout code
         uses: actions/checkout@v4
-
       # Bước 2: Cài đặt Node.js môi trường
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -85,3 +84,12 @@ jobs:
           echo "🏷️ SHA Tag: ${{ github.sha }}"
           echo "🏗️ Platforms: linux/amd64, linux/arm64"
 
+  # ===== JOB 3: DEPLOY (Call CD Pipeline) =====
+  deploy:
+    name: 🚀 Trigger CD Pipeline
+    needs: docker-build-push
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/cd-deploy-to-vm-internal.yml
+    with:
+      sha: ${{ github.sha }}
+    secrets: inherit
