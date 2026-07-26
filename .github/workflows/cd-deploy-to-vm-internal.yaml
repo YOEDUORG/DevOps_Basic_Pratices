@@ -37,11 +37,11 @@ jobs:
   # ===== DEPLOY TO SELF-HOSTED SERVER =====
   deploy-to-vm:
     name: 🚀 Deploy to Ubuntu VM
-    runs-on: self-hosted
+    runs-on: vm-runner-serverdev
     
     # Nếu dùng CÁCH 1 (workflow_run), bạn cần mở comment dòng if này để đảm bảo CI phải thành công:
     # if: ${{ github.event.workflow_run.conclusion == 'success' }}
- 
+
     steps:
       - name: Set image tag from CI run
         id: vars
