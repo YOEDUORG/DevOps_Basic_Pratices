@@ -3,18 +3,14 @@
 # Buổi 3: Tự động Build, Test và Deploy
 # ============================================
 
-name: CI/CD Pipeline
+name: CI Pipeline
 
 # Kích hoạt khi có code push hoặc tạo pull request vào nhánh 'cicd'
 on:
   push:
     branches: ["cicd"]
-    paths:
-      - "03_CICD/lab/**"   # Chỉ chạy khi có thay đổi trong thư mục lab
   pull_request:
     branches: ["cicd"]
-    paths:
-      - "03_CICD/lab/**"
 
 jobs:
   # ===== JOB 1: BUILD & TEST =====
@@ -23,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Bước 1: Tải mã nguồn về runner
+      # Bước 1: Tải mã nguồn về runner 
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -43,7 +39,7 @@ jobs:
         working-directory: 03_CICD/lab
         run: npm test
 
-  # ===== JOB 2: BUILD & PUSH DOCKER IMAGE =====
+  # ===== JOB 2: BUILD & PUSH DOCKER IMAGE (Multi-Arch) =====
   docker-build-push:
     name: 🐳 Build & Push Docker Image
     runs-on: ubuntu-latest
@@ -54,6 +50,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Cài đặt QEMU để giả lập kiến trúc ARM64 khi build trên máy x86_64
+      - name: Set up QEMU (ARM64 emulation)
+        uses: docker/setup-qemu-action@v3
+
+      # Cài đặt Docker Buildx — builder hỗ trợ build multi-platform
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       # Đăng nhập vào Docker Hub sử dụng Secrets bảo mật
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -61,12 +65,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Build và Push image — context trỏ đúng vào thư mục lab có Dockerfile
-      - name: Build and Push Docker image
+      # Build multi-arch image (amd64 + arm64) và Push lên Docker Hub
+      # Server Ubuntu ARM sẽ tự pull đúng variant arm64 khi docker pull
+      - name: Build and Push Docker image (multi-arch)
         uses: docker/build-push-action@v5
         with:
           context: 03_CICD/lab
           push: true
+          platforms: linux/amd64,linux/arm64   # ← Build cả 2 kiến trúc
           # Gắn 2 tag: latest (bản mới nhất) và mã SHA của commit
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/devops-basic-app:latest
@@ -77,3 +83,5 @@ jobs:
           echo "✅ Image đã được push lên Docker Hub thành công!"
           echo "📦 Image: ${{ secrets.DOCKERHUB_USERNAME }}/devops-basic-app:latest"
           echo "🏷️ SHA Tag: ${{ github.sha }}"
+          echo "🏗️ Platforms: linux/amd64, linux/arm64"
+

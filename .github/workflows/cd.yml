@@ -1,0 +1,65 @@
+# ============================================
+# GitHub Actions CD Pipeline
+# Buổi 3: Tự động Deploy lên Ubuntu VM
+# Chạy SAU KHI CI Pipeline hoàn thành thành công
+# ============================================
+
+name: CD Pipeline
+
+# Trigger: Chạy sau khi workflow CI hoàn thành thành công trên nhánh 'cicd'
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+    branches:
+      - cicd
+
+jobs:
+  # ===== DEPLOY TO SELF-HOSTED SERVER =====
+  deploy-to-vm:
+    name: 🚀 Deploy to Ubuntu VM
+    runs-on: self-hosted                        # Chạy trên runner cài trong VM của bạn
+    # Chỉ chạy nếu CI Pipeline THÀNH CÔNG (không chạy nếu CI bị fail)
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      # Lấy SHA của commit đã trigger CI để pull đúng image version
+      - name: Set image tag from CI run
+        id: vars
+        run: |
+          echo "SHA=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+
+      # Đăng nhập vào Docker Hub để pull image
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      # Pull image mới về server (dùng SHA tag để biết chính xác version)
+      - name: Pull Docker image
+        run: docker pull ${{ secrets.DOCKERHUB_USERNAME }}/devops-basic-app:${{ steps.vars.outputs.SHA }}
+
+      # Dừng và xoá container cũ nếu đang chạy (|| true để không fail nếu chưa có)
+      - name: Stop & remove old container
+        run: |
+          docker stop devops-app || true
+          docker rm devops-app || true
+
+      # Khởi chạy container mới với image version mới nhất
+      - name: Run new container
+        run: |
+          docker run -d \
+            --name devops-app \
+            --restart unless-stopped \
+            -p 80:3000 \
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-basic-app:${{ steps.vars.outputs.SHA }}
+
+      # Xoá các image cũ không còn dùng để giải phóng disk
+      - name: Cleanup old images
+        run: docker image prune -af
+
+      # Thông báo kết quả deploy
+      - name: 🎉 Deploy success notification
+        run: |
+          echo "✅ Deploy thành công!"
+          echo "📦 Image: ${{ secrets.DOCKERHUB_USERNAME }}/devops-basic-app:${{ steps.vars.outputs.SHA }}"
+          echo "🌐 App đang chạy tại: http://$(hostname -I | awk '{print $1}'):80"
