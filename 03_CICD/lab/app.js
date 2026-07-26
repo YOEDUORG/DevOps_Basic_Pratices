@@ -116,7 +116,7 @@ app.get('/', (req, res) => {
     <div class="container">
         <div class="badge">CI/CD Pipeline Lab</div>
         <h1>Deploy Thành Công! 🚀</h1>
-        <h1>Deploy V1.1.4</h1>
+        <h1>Deploy V1.1.4.3</h1>
         <p class="subtitle"> Ứng dụng này được tự động build và deploy 100% bằng GitHub Actions.</p>
 
         <div class="info-grid">
