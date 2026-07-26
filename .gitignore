@@ -1,5 +1,6 @@
-# Ignore unused study directories
-03_CICD/
+# Ignore unused study directories but keep CICD lab
+03_CICD/*
+!03_CICD/lab/
 04_EndToEnd_Interview/
 Draft/
 

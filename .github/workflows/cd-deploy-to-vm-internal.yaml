@@ -1,0 +1,87 @@
+# ============================================
+# GitHub Actions CD Pipeline
+# Buổi 3: Tự động Deploy lên Ubuntu VM
+# Chạy SAU KHI CI Pipeline hoàn thành thành công
+# ============================================
+
+name: CD Pipeline
+
+on:
+  # ==============================================================================
+  # CÁCH 1: Dùng `workflow_run` 
+  # LƯU Ý: Cách này CHỈ HOẠT ĐỘNG khi file workflow này nằm trên nhánh default (thường là 'main').
+  # Do chúng ta đang thực hành trên nhánh 'cicd', cách này sẽ bị GitHub bỏ qua.
+  # ==============================================================================
+  # workflow_run:
+  #   workflows: ["CI Pipeline For Runner"]
+  #   types:
+  #     - completed
+  #   branches:
+  #     - cicd
+
+  # ==============================================================================
+  # CÁCH 2: Dùng `workflow_call` (Reusable workflow)
+  # HOẠT ĐỘNG TRÊN MỌI NHÁNH. Cho phép CI Pipeline gọi trực tiếp file CD này.
+  # 💡 NOTE: Vì dùng workflow_call, CD Pipeline sẽ KHÔNG hiển thị thành 1 dòng riêng 
+  # ở thanh menu trái của GitHub Actions. Thay vào đó, Job của nó sẽ chạy "gộp" 
+  # và hiển thị chung bên trong bản run của CI Pipeline đã gọi nó.
+  # ==============================================================================
+  workflow_call:
+    inputs:
+      sha:
+        description: 'Commit SHA from CI'
+        required: true
+        type: string
+
+jobs:
+  # ===== DEPLOY TO SELF-HOSTED SERVER =====
+  deploy-to-vm:
+    name: 🚀 Deploy to Ubuntu VM
+    runs-on: vm-runner-serverdev
+    
+    # Nếu dùng CÁCH 1 (workflow_run), bạn cần mở comment dòng if này để đảm bảo CI phải thành công:
+    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Set image tag from CI run
+        id: vars
+        run: |
+          # Dùng cho CÁCH 1 (workflow_run): Lấy SHA từ thông tin event của workflow đi trước
+          # echo "SHA=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          
+          # Dùng cho CÁCH 2 (workflow_call): Lấy SHA từ biến đầu vào (inputs) được truyền sang
+          echo "SHA=${{ inputs.sha }}" >> $GITHUB_OUTPUT
+
+      # Đăng nhập vào Docker Hub để pull image
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      # Pull image mới về server (dùng SHA tag để biết chính xác version)
+      - name: Pull Docker image
+        run: docker pull ${{ secrets.DOCKERHUB_USERNAME }}/devops-basic-app:${{ steps.vars.outputs.SHA }}
+
+      # Dừng và xoá container cũ nếu đang chạy (|| true để không fail nếu chưa có)
+      - name: Stop & remove old container
+        run: |
+          docker stop devops-app || true
+          docker rm devops-app || true
+
+      # Khởi chạy container mới với image version mới nhất
+      - name: Run new container
+        run: |
+          docker run -d \
+            --name devops-app \
+            --restart unless-stopped \
+            -p 80:3000 \
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-basic-app:${{ steps.vars.outputs.SHA }}
+
+      # Xoá các image cũ không còn dùng để giải phóng disk
+      - name: Cleanup old images
+        run: docker image prune -af
+
+      # Thông báo kết quả deploy
+      - name: 🎉 Deploy success notification
+        run: |
+          echo "✅ Deploy thành công!"
+          echo "📦 Image: ${{ secrets.DOCKERHUB_USERNAME }}/devops-basic-app:${{ steps.vars.outputs.SHA }}"
+          echo "🌐 App đang chạy tại: http://$(hostname -I | awk '{print $1}'):80"

@@ -1,0 +1,103 @@
+# ============================================
+# GitHub Actions CI/CD Pipeline
+# Buổi 3: Tự động Build, Test và Deploy
+# ============================================
+
+name: CI Pipeline
+
+# Kích hoạt khi có code push hoặc tạo pull request vào nhánh 'cicd'
+on:
+  push:
+    branches: ["cicd"]
+  pull_request:
+    branches: ["cicd"]
+
+jobs:
+  # ===== JOB 1: BUILD & TEST =====
+  build-and-test:
+    name: 🧪 Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # Bước 1: Tải mã nguồn về runner 
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Bước 2: Cài đặt Node.js môi trường
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # Bước 3: Cài đặt thư viện (chạy trong đúng thư mục lab)
+      - name: Install dependencies
+        working-directory: 03_CICD/lab
+        run: npm install
+
+      # Bước 4: Chạy script test
+      - name: Run tests
+        working-directory: 03_CICD/lab
+        run: npm test
+
+  # ===== JOB 2: BUILD & PUSH DOCKER IMAGE (Multi-Arch) =====
+  docker-build-push:
+    name: 🐳 Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: build-and-test      # CHỈ CHẠY khi Job 1 (build-and-test) thành công
+    if: github.event_name == 'push'  # Chỉ push image khi đó là event Push (không phải PR)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Cài đặt QEMU để giả lập kiến trúc ARM64 khi build trên máy x86_64
+      - name: Set up QEMU (ARM64 emulation)
+        uses: docker/setup-qemu-action@v3
+
+      # Cài đặt Docker Buildx — builder hỗ trợ build multi-platform
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Đăng nhập vào Docker Hub sử dụng Secrets bảo mật
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build multi-arch image (amd64 + arm64) và Push lên Docker Hub
+      # Server Ubuntu ARM sẽ tự pull đúng variant arm64 khi docker pull
+      - name: Build and Push Docker image (multi-arch)
+        uses: docker/build-push-action@v5
+        with:
+          context: 03_CICD/lab
+          push: true
+          platforms: linux/amd64,linux/arm64   # ← Build cả 2 kiến trúc
+          # Gắn 2 tag: latest (bản mới nhất) và mã SHA của commit
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-basic-app:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-basic-app:${{ github.sha }}
+
+      - name: 🎉 Deploy notification
+        run: |
+          echo "✅ Image đã được push lên Docker Hub thành công!"
+          echo "📦 Image: ${{ secrets.DOCKERHUB_USERNAME }}/devops-basic-app:latest"
+          echo "🏷️ SHA Tag: ${{ github.sha }}"
+          echo "🏗️ Platforms: linux/amd64, linux/arm64"
+
+  # ==============================================================================
+  # ===== JOB 3: CALL CD PIPELINE (Dùng cho CÁCH 2: workflow_call) =====
+  # ==============================================================================
+  # 💡 HỌC THUẬT: Có 2 cách để nối tiếp 2 workflow CI và CD:
+  # CÁCH 1: Dùng `workflow_run` bên file CD. Nghĩa là file CI này không cần quan tâm CD. 
+  #         (Khuyết điểm: Chỉ chạy được khi code đã merge vào nhánh 'main')
+  #
+  # CÁCH 2: Dùng `workflow_call` bên file CD, và file CI gọi trực tiếp nó như bên dưới.
+  #         (Ưu điểm: Chạy được ngay trên mọi nhánh, ví dụ nhánh 'cicd' này)
+  trigger-cd:
+    name: 🚀 Trigger CD Pipeline
+    needs: docker-build-push
+    uses: ./.github/workflows/cd-deploy-to-vm-internal.yaml
+    with:
+      sha: ${{ github.sha }}
+    secrets: inherit

@@ -19,34 +19,66 @@ Bài Lab giả lập một hệ thống Microservices 4 tầng (4-tier architect
 - **`lab/frontend/`**: Giao diện Web tĩnh HTML/JS/CSS phục vụ bởi Nginx.
 - **`lab/ocelotgw/`**: API Gateway chuyên dụng viết bằng .NET 8 (Ocelot) để định tuyến (Routing) và chia tải (Load Balancing).
 
-## 🚀 Hướng dẫn Sử dụng (Ví dụ cho Buổi 2)
+### 3. `03_CICD/` (Buổi 3: Tự Động Hóa với CI/CD Pipeline)
+Bài Lab hướng dẫn xây dựng pipeline CI/CD hoàn chỉnh với GitHub Actions — tự động Build, Test và Push Docker Image lên Docker Hub.
+- **`lab/`**: Ứng dụng Express.js đơn giản kèm test suite để kiểm tra API.
+- **`lab/.github/workflows/`**: File workflow `main.yml` định nghĩa pipeline 2 jobs: Build & Test → Push Docker Image.
+- **`lab/Dockerfile`**: Đóng gói ứng dụng thành Docker Image để push lên Docker Hub.
 
-Để chạy thử hệ thống Microservices trong bài Lab 2, bạn chỉ cần thực hiện các bước sau:
+### 4. `04_EndToEnd_Interview/` (Buổi 4: Bài Tập Cuối Khóa & Phỏng Vấn)
+Bài Lab cuối khóa tổng hợp toàn bộ kiến thức — xây dựng hệ thống Mini E-Commerce với kiến trúc 4 tầng, kết hợp luyện phỏng vấn DevOps.
+- **`lab/`**: Cấu hình `docker-compose.yml` cho 4 services: API Gateway, Frontend, Backend, MySQL.
+- **`lab/api-gateway/`**: Nginx Reverse Proxy điều phối traffic — cửa ngõ duy nhất của hệ thống.
+- **`lab/backend/`**: RESTful API (Node.js) — CRUD Products & Cart Management.
+- **`lab/frontend/`**: Giao diện E-Commerce tĩnh HTML/CSS/JS phục vụ bởi Nginx.
+- **`lab/mysql/`**: Script SQL khởi tạo bảng `products` và `cart_items` tự động.
+- **`Interview_Questions.md`**: Bộ 20 câu hỏi phỏng vấn DevOps cấp Junior kèm đáp án mẫu.
 
-1. Di chuyển vào thư mục bài Lab:
-   ```bash
-   cd 02_Microservices/lab/
-   ```
+## 🚀 Hướng dẫn Sử dụng
 
-2. Khởi chạy toàn bộ hệ thống dưới nền (background):
-   ```bash
-   docker compose up -d --build
-   ```
+### Buổi 1 — Docker
 
-3. Thử nghiệm tính năng **Load Balancing**:
-   Scale ứng dụng Backend lên nhiều bản sao:
-   ```bash
-   docker compose up --scale backend=3 -d
-   ```
-   Sau đó, mở trình duyệt truy cập vào `http://localhost:8080/` để xem giao diện, hoặc gọi API sức khỏe của Backend để thấy sự phân bổ tải:
-   ```bash
-   for i in {1..10}; do curl -s http://localhost:8080/api/health; echo ""; sleep 0.2; done
-   ```
+```bash
+cd 01_Docker/lab
+docker build -t my-node-app .
+docker run -d -p 8080:3000 --name devops-app my-node-app
+# Truy cập: http://localhost:8080
+```
 
-4. Dọn dẹp hệ thống khi học xong:
-   ```bash
-   docker compose down -v
-   ```
+### Buổi 2 — Microservices
+
+```bash
+cd 02_Microservices/lab/
+docker compose up -d --build
+# Truy cập: http://localhost:8080
+# Scale Backend: docker compose up --scale backend=3 -d
+```
+
+### Buổi 3 — CI/CD
+
+```bash
+cd 03_CICD/lab
+# Tạo repo GitHub → Thêm Secrets (DOCKERHUB_USERNAME, DOCKERHUB_TOKEN)
+# Copy code vào repo → Push lên main
+git push -u origin main
+# Xem tab Actions trên GitHub để theo dõi pipeline
+```
+
+### Buổi 4 — End-to-End
+
+```bash
+cd 04_EndToEnd_Interview/lab
+docker compose up --build -d
+# Truy cập: http://localhost (port 80 qua API Gateway)
+# Test: curl http://localhost/api/products
+```
+
+### Dọn dẹp hệ thống
+
+```bash
+docker compose down -v
+docker system prune -f
+```
 
 ## 🔒 Ghi chú về Bảo mật
 Trong các bài Lab này, mật khẩu cơ sở dữ liệu (`devops123`) được **cố tình cấu hình cứng (hardcoded)** để giúp học viên dễ dàng khởi chạy môi trường mà không cần thiết lập biến môi trường phức tạp. Tuyệt đối **không áp dụng** cách làm này cho các dự án thực tế chạy trên Production.

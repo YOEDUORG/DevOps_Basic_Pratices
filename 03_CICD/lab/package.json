@@ -1,0 +1,13 @@
+{
+  "name": "devops-lab-cicd",
+  "version": "1.0.0",
+  "description": "Ứng dụng mẫu cho bài Lab CI/CD",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

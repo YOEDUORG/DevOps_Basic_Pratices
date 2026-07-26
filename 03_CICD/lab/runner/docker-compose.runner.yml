@@ -1,0 +1,68 @@
+# ============================================================
+# Docker Compose — GitHub Self-Hosted Runner (myoung34)
+# ============================================================
+# Chạy file này TRÊN MÁY CHỦ UBUNTU VM để khởi động runner
+#
+# Cách sử dụng:
+#   1. Copy file này vào thư mục bất kỳ trên VM (VD: ~/runner/)
+#   2. Tạo file .env cùng thư mục (xem phần biến môi trường bên dưới)
+#   3. Chạy: docker compose -f docker-compose.runner.yml up -d
+#
+# Biến môi trường cần có trong file .env:
+#   ACCESS_TOKEN=<GitHub Personal Access Token>  ← Xem hướng dẫn bên dưới
+#   REPO_URL=https://github.com/YOEDUORG/DevOps_Basic_Pratices
+# ============================================================
+
+services:
+  github-runner:
+    image: myoung34/github-runner:ubuntu-jammy   # Ubuntu 22.04 — tương thích Ubuntu 26.04 server
+    container_name: github-runner
+    restart: unless-stopped
+
+    environment:
+      # === BẮT BUỘC ===
+      REPO_URL: ${REPO_URL}                       # URL repo GitHub của bạn
+      ACCESS_TOKEN: ${ACCESS_TOKEN}               # GitHub PAT (repo scope)
+
+      # === TÙY CHỌN (nhưng nên đặt) ===
+      RUNNER_NAME: vm-local-runner                # Tên hiển thị trên GitHub Actions tab
+      RUNNER_WORKDIR: /tmp/runner/work            # Thư mục làm việc của runner
+      RUNNER_GROUP: default
+      LABELS: self-hosted,linux,ubuntu            # Labels để workflow nhận diện (runs-on: self-hosted)
+      EPHEMERAL: false                            # false = runner luôn tồn tại, không tự xoá sau mỗi job
+
+    volumes:
+      # Cho phép runner dùng Docker của host để chạy lệnh docker pull/run
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Lưu trạng thái runner để không cần đăng ký lại khi restart
+      - runner-data:/home/runner
+
+    # Đảm bảo runner có thể gọi Docker trên host
+    group_add:
+      - docker
+
+volumes:
+  runner-data:
+    driver: local
+
+# ============================================================
+# HƯỚNG DẪN TẠO GITHUB PERSONAL ACCESS TOKEN (PAT)
+# ============================================================
+# 1. Vào GitHub.com → Avatar → Settings
+# 2. Developer settings → Personal access tokens → Tokens (classic)
+# 3. Generate new token (classic)
+# 4. Đặt tên: "DevOps Lab Runner"
+# 5. Chọn scope: [x] repo (toàn bộ repo permissions)
+# 6. Generate → Copy token ngay (chỉ hiện 1 lần!)
+# 7. Lưu vào file .env trên VM:
+#
+#    ACCESS_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+#    REPO_URL=https://github.com/YOEDUORG/DevOps_Basic_Pratices
+#
+# ============================================================
+# KIỂM TRA RUNNER ĐÃ HOẠT ĐỘNG
+# ============================================================
+# Sau khi chạy docker compose up -d, vào GitHub:
+# Settings → Actions → Runners
+# Runner "vm-local-runner" phải hiện trạng thái: ● Idle (xanh)
+# ============================================================
